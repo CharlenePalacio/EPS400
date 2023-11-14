@@ -133,3 +133,77 @@ def fit_all_velocities(folder, pattern):
     })
 
     return result_df
+
+def fit_tide_gauge(filename) :
+
+    file = pd.read_csv(filename, header=None, sep = ';')
+    # get the t list and the y list
+    tlist = file[0]
+    ylist = file[1]
+    
+    return fit_timeseries(tlist,ylist);
+
+def fit_all_velocities2(folder, pattern, type):
+    site_names = []
+    latitudes = []
+    longitudes = []
+    elevations = []
+    velocities = []
+    velocity_uncertainties = []
+    e_velocities = []
+    e_velocity_uncertainties = []
+    n_velocities = []
+    n_velocity_uncertainties = []
+    u_velocities = []
+    u_velocity_uncertainties = []
+
+    file_list = glob.glob(os.path.join(folder, pattern))
+    
+    print('file list:')
+    print(file_list)
+
+    for file_name in file_list:
+        site_name = os.path.splitext(os.path.basename(file_name))[0]
+        
+        if type == "GNSS":
+            e_velocity, e_velocity_uncertainty, n_velocity, n_velocity_uncertainty, u_velocity, u_velocity_uncertainty = fit_velocities(file_name)
+            latitude, longitude, elevation = get_coordinates(file_name)
+            site_names.append(site_name)
+            latitudes.append(latitude)
+            longitudes.append(longitude)
+            elevations.append(elevation)
+            e_velocities.append(e_velocity)
+            e_velocity_uncertainties.append(e_velocity_uncertainty)
+            n_velocities.append(n_velocity)
+            n_velocity_uncertainties.append(n_velocity_uncertainty)
+            u_velocities.append(u_velocity)
+            u_velocity_uncertainties.append(u_velocity_uncertainty)
+
+        elif type == "tide":
+            print("tide:", file_name)
+            velocity, velocity_uncertainty = fit_tide_gauge(file_name)
+            site_names.append(site_name)
+            velocities.append(velocity)
+            velocity_uncertainties.append(velocity_uncertainty)
+    
+    if type == "GNSS":
+        
+        result_df = pd.DataFrame({
+            'Site': site_names,
+            'Latitude': latitudes,
+            'Longitude': longitudes,
+            'E Velocity': e_velocities,
+            'E Velocity Uncertainty': e_velocity_uncertainties,
+            'N Velocity': n_velocities,
+            'N Velocity Uncertainty': n_velocity_uncertainties,
+            'U Velocity': u_velocities,
+            'U Velocity Uncertainty': u_velocity_uncertainties
+        })
+    elif type == "tide":
+        result_df = pd.DataFrame({
+            'Site': site_names,
+            'Velocity': velocities,
+            'Velocity Uncertainty': velocity_uncertainties,
+        })
+    
+    return result_df
